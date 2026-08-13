@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#3a3226" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Учёт продаж" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<title>GINZA_AUTO_GROUP</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; overscroll-behavior-y: contain; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f6f3ea;
+    color: #332b1f;
+  }
+  #root { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+  header {
+    padding: calc(12px + env(safe-area-inset-top)) 14px 10px;
+    background: #fbf9f2;
+    border-bottom: 1px solid #e5ddc8;
+    flex-shrink: 0;
+  }
+  .top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 8px; background: #3a3226; color: #f6f3ea;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'SF Mono', monospace; font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  .title { font-size: 15px; font-weight: 700; line-height: 1.2; }
+  .subtitle { font-size: 11.5px; color: #8a7f68; margin-top: 1px; }
+  .save-indicator { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: #8a7a5c; min-width: 60px; text-align: right; }
+  .save-indicator.error { color: #9c4a2e; }
+
+  .kpi-row { display: flex; gap: 8px; margin-bottom: 10px; overflow-x: auto; }
+  .kpi { background: #fff; border: 1px solid #e3dbc9; border-radius: 8px; padding: 7px 11px; flex-shrink: 0; min-width: 84px; }
+  .kpi-value { font-size: 16px; font-weight: 700; font-family: 'SF Mono', monospace; }
+  .kpi-label { font-size: 9.5px; color: #8a7f68; text-transform: uppercase; letter-spacing: .03em; margin-top: 1px; }
+
+  .search-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .search-box {
+    flex: 1; display: flex; align-items: center; gap: 6px;
+    background: #fff; border: 1px solid #e3dbc9; border-radius: 8px; padding: 9px 10px;
+  }
+  .search-box svg { flex-shrink: 0; }
+  .search-box input {
+    border: none; outline: none; flex: 1; font-size: 14px; background: transparent; color: #332b1f; min-width: 0;
+  }
+  .clear-btn { border: none; background: none; padding: 2px; display: flex; }
+  select#countryFilter {
+    border: 1px solid #e3dbc9; border-radius: 8px; padding: 9px 8px; font-size: 12.5px;
+    background: #fff; color: #332b1f; max-width: 118px;
+  }
+
+  .filter-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; -ms-overflow-style: none; scrollbar-width: none; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .chip {
+    border: 1px solid #e3dbc9; background: #fff; color: #6b6151; border-radius: 999px;
+    padding: 6px 11px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .chip.active { border-color: var(--c); background: var(--bg); color: var(--c); }
+  .chip .count { font-size: 10.5px; font-weight: 700; opacity: .75; font-family: 'SF Mono', monospace; }
+
+  main { flex: 1; overflow-y: auto; background: #fff; -webkit-overflow-scrolling: touch; }
+  .empty { padding: 48px 20px; text-align: center; color: #a89d82; font-size: 13.5px; }
+
+  .row { border-bottom: 1px solid #ece5d5; }
+  .row-main { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .code-block { display: flex; flex-direction: column; min-width: 88px; flex-shrink: 0; }
+  .code-text { font-family: 'SF Mono', monospace; font-size: 12.5px; font-weight: 700; }
+  .vin-text { font-family: 'SF Mono', monospace; font-size: 9.5px; color: #a89d82; margin-top: 1px; }
+  .note-text { flex: 1; font-size: 12.5px; color: #6b6151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .badge { display: flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; padding: 4px 7px; border-radius: 6px; flex-shrink: 0; }
+  .chev { flex-shrink: 0; transition: transform .15s ease; color: #b5a98a; }
+  .chev.open { transform: rotate(180deg); }
+
+  .row-detail { padding: 2px 14px 16px 27px; background: #fbf9f4; display: none; }
+  .row-detail.open { display: block; }
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .field-label { font-size: 10.5px; font-weight: 600; color: #8a7f68; text-transform: uppercase; letter-spacing: .03em; }
+  .field input, .field textarea {
+    border: 1px solid #e3dbc9; border-radius: 6px; padding: 8px 9px; font-size: 13.5px;
+    font-family: inherit; color: #332b1f; background: #fff; width: 100%;
+  }
+  .field textarea { min-height: 52px; resize: vertical; }
+  .status-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+  .status-btn {
+    border: 1px solid #e3dbc9; border-radius: 6px; padding: 7px 11px; font-size: 12px; font-weight: 600;
+    background: #fff; color: #8a7f68;
+  }
+  .status-btn.active { border-color: var(--c); background: var(--bg); color: var(--c); }
+  .detail-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  footer {
+    padding: 8px 14px calc(8px + env(safe-area-inset-bottom));
+    font-size: 11px; color: #a89d82; text-align: center; background: #fbf9f2;
+    border-top: 1px solid #e5ddc8; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div id="root">
+  <header>
+    <div class="top-row">
+      <div class="brand">
+        <div class="brand-mark">GINZA</div>
+        <div>
+          <div class="title">GINZA_AUTO_GROUP</div>
+          <div class="subtitle">Автомобили_2026</div>
+        </div>
+      </div>
+      <div class="save-indicator" id="saveIndicator"></div>
+    </div>
+    <div class="kpi-row" id="kpiRow"></div>
+    <div class="search-row">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a8f78" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="searchInput" placeholder="Лот, VIN, модель, покупатель…" />
+        <button class="clear-btn" id="clearBtn" style="display:none" aria-label="Очистить">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a8f78" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <select id="countryFilter">
+        <option value="all">Все страны</option>
+        <option value="Россия">Россия</option>
+        <option value="Монголия">Монголия</option>
+        <option value="">Не указана</option>
+      </select>
+    </div>
+    <div class="filter-row" id="filterRow"></div>
+  </header>
+
+  <main id="list"></main>
+
+  <footer id="footerInfo"></footer>
+</div>
+
+<script>
+const DATA = [{"date": "2026-01-09", "lot": 50474, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0053037", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-09", "lot": 53841, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0093389", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-10", "lot": 35285, "auction": "HAA KOBE", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0065897", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-10", "lot": 45211, "auction": "USS KYSHU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0122836", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-13", "lot": 599, "auction": "TAA KINKI", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0037844", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-01-13", "lot": 641, "auction": "TAA HIROSHIMA", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0100797", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-13", "lot": 31209, "auction": "USS YOKOHAMA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0099291", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-13", "lot": 31219, "auction": "USS YOKOHAMA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0110127", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-14", "lot": 30541, "auction": "CAA CHUBU", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0062338", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-15", "lot": 55533, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0111667", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-16", "lot": 6333, "auction": "USS OSAKA", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0034606", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-16", "lot": 20385, "auction": "USS OSAKA", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0081070", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-16", "lot": 53156, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0120059", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-01-16", "lot": 53237, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0129356", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-16", "lot": 53258, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0139354", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-16", "lot": 53784, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0064976", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-17", "lot": 12377, "auction": "TAA YOKOHAMA", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0041334", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-01-17", "lot": 70055, "auction": "TAA YOKOHAMA", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0150696", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-17", "lot": 3023, "auction": "USS HOKURIKU", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0013713", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-01-24", "lot": 35220, "auction": "USS SJIZUOKA", "model": "HARRIER", "year": 2015, "vin": "ZSU65-0010600", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-02-03", "lot": 2, "auction": "TAA SHIKOKU", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0039358", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-02-03", "lot": 379, "auction": "TAA KYSHU", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0049283", "buyer": "Алтан Булаг", "country": "Монголия", "status": "sold"}, {"date": "2026-02-04", "lot": 30181, "auction": "CAA CHUBU", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0095965", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-02-04", "lot": 33409, "auction": "CAA CHUBU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0102840", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-02-05", "lot": 80507, "auction": "TAA CHUBU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0107984", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-02-05", "lot": 55403, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0132209", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-02-07", "lot": 1173, "auction": "USS GUNMA", "model": "FORESTER", "year": 2018, "vin": "SJ5-123391", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-02-09", "lot": 80078, "auction": "HONDA KANSAI", "model": "BMW", "year": 2021, "vin": "5F20-08C13631", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-02-11", "lot": 3067, "auction": "USS NIIGATA", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0019359", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-02-12", "lot": 42003, "auction": "TAA KANTO", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0033420", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-02-12", "lot": 224, "auction": "TAA CHUBU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0113139", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-02-12", "lot": 26318, "auction": "USS TOKYO", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0121533", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-02-19", "lot": 73027, "auction": "TAA CHUBU", "model": "NOAH", "year": 2021, "vin": "ZRR80-0701769", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-02-21", "lot": 45391, "auction": "USS KYSHU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0138287", "buyer": "Россия Марен", "country": "Россия", "status": "sold"}, {"date": "2026-02-26", "lot": 25288, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0125570", "buyer": "Россия Ланц", "country": "Россия", "status": "sold"}, {"date": "2026-02-26", "lot": 30272, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0133192", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-05", "lot": 3016, "auction": "JU TOYAMA", "model": "HARRIER", "year": 2017, "vin": "ZSU65-0025433", "buyer": "Россия катома", "country": "Россия", "status": "sold"}, {"date": "2026-03-05", "lot": 7170, "auction": "KCAA FUKUOKA", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0165864", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-03-05", "lot": 25247, "auction": "TAA KANTO", "model": "VOXY", "year": 2021, "vin": "ZRR80-0702163", "buyer": "Россия Тубук", "country": "Россия", "status": "sold"}, {"date": "2026-03-05", "lot": 25405, "auction": "USS TOKYO", "model": "HARRIER", "year": 2014, "vin": "ZSU65-0006393", "buyer": "россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-05", "lot": 55102, "auction": "USS TOKYO", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0042592", "buyer": "Россия Белых", "country": "Россия", "status": "sold"}, {"date": "2026-03-05", "lot": 55783, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU65-0025888", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-06", "lot": 13442, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0042867", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-06", "lot": 53127, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0046568", "buyer": "россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-06", "lot": 54528, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0135586", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-10", "lot": 669, "auction": "TAA HIROSHIMA", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0068288", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-13", "lot": 40, "auction": "JU TOCHIGI", "model": "ESQUIRE", "year": 2016, "vin": "ZWR80-0225377", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-13", "lot": 53978, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0130374", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-03-17", "lot": 30376, "auction": "CAA TOKYO", "model": "FORESTER", "year": 2016, "vin": "SJ5-075772", "buyer": "Россия Дорж", "country": "Россия", "status": "sold"}, {"date": "2026-03-17", "lot": 11, "auction": "TAA KINKI", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0093540", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-03-17", "lot": 365, "auction": "TAA KYSHU", "model": "FORESTER", "year": 2017, "vin": "SJ5-113945", "buyer": "Россий Барбак", "country": "Россия", "status": "sold"}, {"date": "2026-03-18", "lot": 33349, "auction": "CAA CHUBU", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0039353", "buyer": "Росс Кушеев", "country": "", "status": "sold"}, {"date": "2026-03-19", "lot": 4269, "auction": "JU AICHI", "model": "VOXY", "year": 2015, "vin": "ZWR80-0088863", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-20", "lot": 54539, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0150292", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-20", "lot": 2109, "auction": "USS OSAKA", "model": "VOXY", "year": 2015, "vin": "ZWR80-0143720", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-21", "lot": 35642, "auction": "HAA KOBE", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0096739", "buyer": "Россия Рябц", "country": "Россия", "status": "sold"}, {"date": "2026-03-21", "lot": 163, "auction": "TAA YOKOHAMA", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0076933", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-03-21", "lot": 114, "auction": "USS OKAYAMA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0133005", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-03-24", "lot": 20305, "auction": "USS YOKOHAMA", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0097645", "buyer": "Росс Вырлан", "country": "", "status": "sold"}, {"date": "2026-03-26", "lot": 25131, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0117309", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-03-26", "lot": 56368, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0122487", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-03-28", "lot": 5635, "auction": "JU GIFU", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0105545", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-28", "lot": 2145, "auction": "TAA HYOGO", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0080933", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-03-28", "lot": 2250, "auction": "USS GUNMA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0121984", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-03-31", "lot": 30531, "auction": "CAA TOKYO", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0131263", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-31", "lot": 30133, "auction": "CAA GIFU", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0030059", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-03-31", "lot": 129, "auction": "TAA HIROSHIMA", "model": "ESQUIRE", "year": 2017, "vin": "ZWR80-0258095", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-03-31", "lot": 649, "auction": "TAA KYSHU", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0045375", "buyer": "Россия Тодорх", "country": "Россия", "status": "sold"}, {"date": "2026-03-31", "lot": 31075, "auction": "USS YOKOHAMA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0106618", "buyer": "Россия", "country": "Россия", "status": "sold"}, {"date": "2026-04-02", "lot": 25007, "auction": "USS TOKYO", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0146788", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-02", "lot": 25182, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0124032", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-04", "lot": 50033, "auction": "TAA HYOGO", "model": "NOAH", "year": 2015, "vin": "ZWR80-0105915", "buyer": "Алтан-Булаг", "country": "Монголия", "status": "sold"}, {"date": "2026-04-10", "lot": 4226, "auction": "LAA OKAYAMA", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0073259", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-10", "lot": 83, "auction": "NAA TOKYO", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0112049", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-11", "lot": 5102, "auction": "TAA YOKOHAMA", "model": "BMW", "year": 2023, "vin": "WBA20FF0208F72928", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-11", "lot": 37259, "auction": "HAA KOBE", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0104473", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-11", "lot": 35715, "auction": "HAA KOBE", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0141356", "buyer": "Россия Шагд", "country": "Россия", "status": "sold"}, {"date": "2026-04-14", "lot": 70037, "auction": "TAA KINKI", "model": "PRIUS", "year": 2015, "vin": "ZVW50-8004323", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-14", "lot": 80040, "auction": "TAA KINKI", "model": "Corolla Cross", "year": 2022, "vin": "ZVG11-1029322", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-14", "lot": 29, "auction": "TAA SHIKOKU", "model": "FIELDER", "year": 2022, "vin": "NKE165-7253649", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-14", "lot": 2009, "auction": "TAA SHIKOKU", "model": "FIELDER", "year": 2022, "vin": "NKE165-7252413", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-14", "lot": 70134, "auction": "TAA SHIKOKU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0123687", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-14", "lot": 606, "auction": "TAA KYSHU", "model": "FIELDER", "year": 2023, "vin": "NKE165-7268272", "buyer": "Алтан-Булаг", "country": "Монголия", "status": "sold"}, {"date": "2026-04-15", "lot": 30262, "auction": "CAA CHUBU", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0079345", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-15", "lot": 10087, "auction": "USS TOHOKU", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0152620", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-16", "lot": 40001, "auction": "TAA CHUBU", "model": "ESQUIRE", "year": 2015, "vin": "ZRR80-0155906", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-16", "lot": 70014, "auction": "TAA TOHOKU", "model": "CHR", "year": 2019, "vin": "ZYX10-2172066", "buyer": "Алтан-Булаг", "country": "Монголия", "status": "sold"}, {"date": "2026-04-16", "lot": 15364, "auction": "USS TOKYO", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0109410", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-16", "lot": 29557, "auction": "USS TOKYO", "model": "VOXY", "year": 2016, "vin": "ZWR80-0192889", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-16", "lot": 25584, "auction": "USS TOKYO", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0162434", "buyer": "Россия Галсан", "country": "Россия", "status": "sold"}, {"date": "2026-04-17", "lot": 1220, "auction": "LAA OKAYAMA", "model": "AQUA", "year": 2022, "vin": "MXPK11-6001472", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-17", "lot": 50003, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0115351", "buyer": "Россия Огоч", "country": "Россия", "status": "sold"}, {"date": "2026-04-18", "lot": 20474, "auction": "ARAI OYAMA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0116842", "buyer": "Россия Уласик", "country": "Россия", "status": "sold"}, {"date": "2026-04-18", "lot": 458, "auction": "TAA YOKOHAMA", "model": "ESQUIRE", "year": 2017, "vin": "ZWR80-0257146", "buyer": "Росси тимоф", "country": "Россия", "status": "sold"}, {"date": "2026-04-18", "lot": 12680, "auction": "TAA YOKOHAMA", "model": "AQUA", "year": 2021, "vin": "MXPK11-2038582", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-18", "lot": 35235, "auction": "USS SHIZUOKA", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0134656", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-21", "lot": 354, "auction": "TAA HIROSHIMA", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0095514", "buyer": "Алтан булаг", "country": "Монголия", "status": "sold"}, {"date": "2026-04-23", "lot": 148, "auction": "TAA KANTO", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0123692", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-23", "lot": 29193, "auction": "USS TOKYO", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0111426", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-23", "lot": 79218, "auction": "USS TOKYO", "model": "BMW", "year": 2023, "vin": "WBA20FF0408D84501", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-04-24", "lot": 53502, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0062030", "buyer": "Россия Прокоп", "country": "Россия", "status": "sold"}, {"date": "2026-04-25", "lot": 8143, "auction": "JU GIFU", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0157487", "buyer": "Алтан Булаг", "country": "Монголия", "status": "sold"}, {"date": "2026-04-25", "lot": 70042, "auction": "TAA YOKOHAMA", "model": "ESQUIRE", "year": 2017, "vin": "ZWR80-0255248", "buyer": "Россия Шеное", "country": "Россия", "status": "sold"}, {"date": "2026-04-25", "lot": 80254, "auction": "USS KYSHU", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0112970", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-25", "lot": 31125, "auction": "HAA KOBE", "model": "ESQUIRE", "year": 2016, "vin": "ZWR80-0197007", "buyer": "Алтан Булаг", "country": "Монголия", "status": "sold"}, {"date": "2026-04-28", "lot": 191, "auction": "TAA KYSHU", "model": "VOXY", "year": 2016, "vin": "ZWR80-0196781", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-04-30", "lot": 201, "auction": "TAA KANTO", "model": "HARRIER", "year": 2015, "vin": "ZSU65-0013525", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-05-01", "lot": 53364, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0112672", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-05-01", "lot": 10065, "auction": "USS OSAKA", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0084942", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-01", "lot": 3116, "auction": "LAA OKAYAMA", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0035958", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-01", "lot": 4471, "auction": "LAA OKAYAMA", "model": "PRIUS", "year": 2018, "vin": "ZVW50-6114515", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-02", "lot": 31400, "auction": "HAA KOBE", "model": "HARRIER", "year": 2015, "vin": "ZSU65-0013111", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-05-02", "lot": 65364, "auction": "JU GIFU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0131840", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-05-09", "lot": 190, "auction": "TAA HYOGO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0116843", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-05-09", "lot": 267, "auction": "TAA HYOGO", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0084576", "buyer": "", "country": "Монголия", "status": "sold"}, {"date": "2026-05-09", "lot": 2240, "auction": "TAA HYOGO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0110500", "buyer": "алтан булаг", "country": "Монголия", "status": "sold"}, {"date": "2026-05-12", "lot": 98, "auction": "TAA KYSHU", "model": "VOXY", "year": 2016, "vin": "ZWR80-0164221", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-12", "lot": 30299, "auction": "USS YOKOHAMA", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0016021", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-12", "lot": 30049, "auction": "CAA TOKYO", "model": "VOXY", "year": 2016, "vin": "ZWR80-0202059", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-12", "lot": 30366, "auction": "CAA TOKYO", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0051061", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-13", "lot": 70292, "auction": "USS SAPPORO", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0016888", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-13", "lot": 70739, "auction": "USS SAPPORO", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0012369", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-14", "lot": 4470, "auction": "JU AICHI", "model": "HARRIER", "year": 2015, "vin": "ZSU65-0012376", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-14", "lot": 20178, "auction": "TAA KANTO", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0016102", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-15", "lot": 3227, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0103397", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-16", "lot": 42, "auction": "TAA HYOGO", "model": "HARIER", "year": 2018, "vin": "ZSU60-0143457", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-16", "lot": 53477, "auction": "USS KYSHU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0115010", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-20", "lot": 5439, "auction": "LAA SHIKOKU", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0086670", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-21", "lot": 70102, "auction": "TAA KANTO", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0074752", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-21", "lot": 26269, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0127638", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-21", "lot": 26308, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0128136", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-22", "lot": 7127, "auction": "JU MIYAGI", "model": "VOXY", "year": 2017, "vin": "ZWR80-0281627", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-22", "lot": 3053, "auction": "JU CHIBA", "model": "VOXY", "year": 2016, "vin": "ZWR80-0177215", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-22", "lot": 4760, "auction": "NAA TOKYO", "model": "HARRIER", "year": 2014, "vin": "ZSU65-0008593", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-22", "lot": 54136, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0072210", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-23", "lot": 14, "auction": "TAA YOKOHAMA", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0035534", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-23", "lot": 294, "auction": "TAA YOKOHAMA", "model": "VOXY", "year": 2015, "vin": "ZWR80-0145229", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-28", "lot": 30425, "auction": "USS TOKYO", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0052754", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-28", "lot": 55742, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU65-0025625", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-29", "lot": 50583, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0073811", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-29", "lot": 53291, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0080641", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-30", "lot": 37620, "auction": "HAA KOBE", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0148912", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-05-30", "lot": 60186, "auction": "JU GIFU", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0147210", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-02", "lot": 208, "auction": "TAA HIROSHIMA", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0025699", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-02", "lot": 204, "auction": "TAA KYSHU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0120140", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-02", "lot": 30036, "auction": "TAA KYSHU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0114875", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-03", "lot": 60244, "auction": "BAY AUC", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0050921", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-03", "lot": 33578, "auction": "CAA CHUBU", "model": "HARRIER", "year": 2014, "vin": "ZSU65-0004866", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-03", "lot": 33599, "auction": "CAA CHUBU", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0028611", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-03", "lot": 4136, "auction": "USS NIIGATA", "model": "HARRIER", "year": 2015, "vin": "ZSU65-0016490", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-04", "lot": 67215, "auction": "USS TOKYO", "model": "VOXY", "year": 2015, "vin": "ZRR80-0095175", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-05", "lot": 18369, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2016, "vin": "ZSU65-0078935", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-06", "lot": 2031, "auction": "TAA HYOGO", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0058692", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-06", "lot": 16, "auction": "TAA YOKOHAMA", "model": "HARRIER", "year": 2017, "vin": "ZSU65-0029468", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-06", "lot": 389, "auction": "TAA YOKOHAMA", "model": "HARRIER", "year": 2015, "vin": "ZSU65-0015850", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-06", "lot": 70048, "auction": "TAA YOKOHAMA", "model": "VOXY", "year": 2015, "vin": "ZWR80-0122859", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-06", "lot": 12149, "auction": "TAA YOKOHAMA", "model": "HARRIER", "year": 2024, "vin": "MXUA85-0016246", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-06", "lot": 53108, "auction": "USS KYSHU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0127518", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-06", "lot": 53278, "auction": "USS KYSHU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0131676", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-06", "lot": 80620, "auction": "USS KYSHU", "model": "VOXY", "year": 2015, "vin": "ZWR80-0135781", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-06", "lot": 37289, "auction": "HAA KOBE", "model": "VOXY", "year": 2014, "vin": "ZWR80-0007257", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-11", "lot": 29065, "auction": "USS TOKYO", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0147516", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-11", "lot": 32, "auction": "NAA OSAKA", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0012289", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-20", "lot": 37819, "auction": "HAA KOBE", "model": "FORESTER", "year": 2017, "vin": "SJ5-098866", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-20", "lot": 37283, "auction": "HAA KOBE", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0129040", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-20", "lot": 70053, "auction": "TAA YOKOHAMA", "model": "HARRIER", "year": 2015, "vin": "ZSU65-0011071", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-20", "lot": 50171, "auction": "USS KSYHU", "model": "Corolla Cross", "year": 2023, "vin": "ZVG11-1071350", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-23", "lot": 540, "auction": "TAA KINKI", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0010645", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-23", "lot": 32001, "auction": "TAA M KYSHU", "model": "FORESTER", "year": 2016, "vin": "SJ5-089332", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-27", "lot": 35583, "auction": "HAA KOBE", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0140658", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-27", "lot": 26, "auction": "TAA YOKOHAMA", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0086599", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-27", "lot": 53205, "auction": "USS KSYHU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0129437", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-30", "lot": 30158, "auction": "CAA TOKYO", "model": "ESQUIRE", "year": 2016, "vin": "ZWR80-0194329", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-30", "lot": 30320, "auction": "CAA TOKYO", "model": "ESQUIRE", "year": 2016, "vin": "ZWR80-0171659", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-06-30", "lot": 30531, "auction": "CAA TOKYO", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0128938", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-02", "lot": 149, "auction": "TAA CHUBU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0129272", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-02", "lot": 80523, "auction": "TAA CHUBU", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0146731", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-02", "lot": 20838, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0130615", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-02", "lot": 25529, "auction": "USS TOKYO", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0056967", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-02", "lot": 55410, "auction": "USS TOKYO", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0118705", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-03", "lot": 35452, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0132306", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-03", "lot": 53354, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2015, "vin": "ZSU65-0016349", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-03", "lot": 53807, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0157674", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-03", "lot": 30295, "auction": "USS OSAKA", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0155153", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-04", "lot": 31137, "auction": "HAA KOBE", "model": "ESQUIRE", "year": 2017, "vin": "ZWR80-0285290", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-04", "lot": 7067, "auction": "USS OKAYAMA", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0092735", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-04", "lot": 53239, "auction": "USS KYUSHU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0127925", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-04", "lot": 60069, "auction": "JU GIFU HASHIMA", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0127988", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-07", "lot": 30616, "auction": "CAA TOKYO", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0150603", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-07", "lot": 30682, "auction": "CAA TOKYO", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0138414", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-07", "lot": 138, "auction": "TAA KYUSHU", "model": "ESQUIRE", "year": 2017, "vin": "ZWR80-0252007", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-09", "lot": 25150, "auction": "USS TOKYO", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0145244", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-09", "lot": 5075, "auction": "ARAI OYAMA", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0073601", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-10", "lot": 17494, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0134963", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-10", "lot": 50478, "auction": "USS NAGOYA", "model": "VOXY", "year": 2015, "vin": "ZWR80-0149067", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-10", "lot": 23, "auction": "USS OSAKA", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0033261", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-11", "lot": 31254, "auction": "HAA KOBE", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0124312", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-11", "lot": 35161, "auction": "HAA KOBE", "model": "ESQUIRE", "year": 2017, "vin": "ZWR80-0256625", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-11", "lot": 53027, "auction": "USS KYSHU", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0075673", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-11", "lot": 53169, "auction": "USS KYSHU", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0140517", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-14", "lot": 416, "auction": "TAA KINKI", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0149345", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-14", "lot": 666, "auction": "TAA KINKI", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0159768", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-14", "lot": 781, "auction": "TAA KINKI", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0102119", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-14", "lot": 367, "auction": "TAA HIROSHIMA", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0085231", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-14", "lot": 2180, "auction": "TAA KYSHU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0129650", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-15", "lot": 33185, "auction": "CAA CHUBU", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0138717", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-15", "lot": 70344, "auction": "USS SAPPORO", "model": "HARRIER", "year": 2015, "vin": "ZSU65-0015260", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-16", "lot": 55326, "auction": "USS TOKYO", "model": "VOXY", "year": 2015, "vin": "ZWR80-0085044", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-16", "lot": 55565, "auction": "USS TOKYO", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0062080", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-18", "lot": 53, "auction": "USS OKAYAMA", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0139208", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-18", "lot": 50250, "auction": "USS KYSHU", "model": "Corolla Cross", "year": 2023, "vin": "ZVG11-1070783", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-18", "lot": 37496, "auction": "HAA KOBE", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0067656", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-21", "lot": 8063, "auction": "JU SAITAMA", "model": "NOAH", "year": 2021, "vin": "ZRR80-0663162", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-21", "lot": 6048, "auction": "TAA M KYSHU", "model": "HARRIER", "year": 2015, "vin": "ZSU60-0058202", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-22", "lot": 3045, "auction": "KCAA M KYSHU", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0150308", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-22", "lot": 3073, "auction": "LAA SHIKOKU", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0113029", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-25", "lot": 20142, "auction": "USS KYSHU", "model": "ESQUIRE", "year": 2018, "vin": "ZWR80-0311880", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-28", "lot": 6004, "auction": "TAA KYUSHU", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0156387", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-28", "lot": 687, "auction": "TAA KINKI", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0134543", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-28", "lot": 519, "auction": "TAA KYUSHU", "model": "FORESTER", "year": 2016, "vin": "SJ5-075579", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-28", "lot": 558, "auction": "TAA KYUSHU", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0150465", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-29", "lot": 30379, "auction": "TAA CHUBU", "model": "ESQUIRE", "year": 2016, "vin": "ZWR80-0164593", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-29", "lot": 18, "auction": "USS TOHOKU", "model": "ESQUIRE", "year": 2016, "vin": "ZWR80-0129840", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-29", "lot": 19, "auction": "USS TOHOKU", "model": "VOXY", "year": 2015, "vin": "ZWR80-0128263", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-30", "lot": 2040, "auction": "JU GUNMA", "model": "WISH", "year": 2012, "vin": "ZGE20-0131290", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-07-30", "lot": 573, "auction": "KCAA FUKUOKA", "model": "WISH", "year": 2012, "vin": "ZGE20-0132028", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-01", "lot": 70, "auction": "TAA YOKOHAMA", "model": "ESQUIRE", "year": 2016, "vin": "ZWR80-0168708", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-01", "lot": 20054, "auction": "USS TOKYO", "model": "ESQUIRE", "year": 2015, "vin": "ZWR80-0116711", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-01", "lot": 30177, "auction": "USS SHIZUOKA", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0135524", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-04", "lot": 2119, "auction": "TAA KYUSHU", "model": "HARRIER", "year": 2016, "vin": "ZSU60-0131221", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-05", "lot": 3060, "auction": "LAA SHIKOKU", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0013377", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-06", "lot": 40058, "auction": "TAA KANTO", "model": "COROLLA FIELDER", "year": 2023, "vin": "NKE165-7275003", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-06", "lot": 4331, "auction": "TAA CHUBU", "model": "HARRIER", "year": 2017, "vin": "ZSU60-0125324", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-06", "lot": 80559, "auction": "TAA CHUBU", "model": "ESQUIRE", "year": 2016, "vin": "ZWR80-0230778", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-06", "lot": 18311, "auction": "USS TOKYO", "model": "ESQUIRE", "year": 2016, "vin": "ZWR80-0187306", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-06", "lot": 23931, "auction": "USS TOKYO", "model": "VOXY", "year": 2017, "vin": "ZWR80-0268539", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-06", "lot": 30067, "auction": "USS TOKYO", "model": "HARRIER", "year": 2014, "vin": "ZSU60-0006649", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-05", "lot": 30550, "auction": "CAA CHUBU", "model": "AQUA", "year": 2022, "vin": "MXPK11-2095792", "buyer": "", "country": "", "status": "waiting"}, {"date": "2026-08-07", "lot": 53849, "auction": "USS NAGOYA", "model": "HARRIER", "year": 2018, "vin": "ZSU60-0141784", "buyer": "", "country": "", "status": "waiting"}]
+;
+
+function buildInitial() {
+  return DATA.map((r, idx) => ({
+    id: "R" + idx,
+    date: r.date, lot: r.lot, auction: r.auction, model: r.model, year: r.year,
+    vin: r.vin, buyer: r.buyer, country: r.country, status: r.status
+  }));
+}
+const INITIAL = buildInitial();
+
+const STATUS_META = {
+  waiting:   { label: "В пути / на складе", color: "#8a7a5c", bg: "#f3ede0" },
+  sold:      { label: "Продан",             color: "#9c4a2e", bg: "#f7e9e2" },
+  reserved:  { label: "Резерв",             color: "#3a5a8c", bg: "#e8edf6" },
+  cancelled: { label: "Отменён",            color: "#8a8a8a", bg: "#efefef" }
+};
+const STORAGE_KEY = "sales-overrides-v1";
+
+let overrides = {};
+try { overrides = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch (e) { overrides = {}; }
+let query = "";
+let statusFilter = "all";
+let countryFilter = "all";
+let openId = null;
+
+function getItems() {
+  return INITIAL.map((base) => {
+    const o = overrides[base.id];
+    return o ? Object.assign({}, base, o) : base;
+  });
+}
+
+function persist() {
+  const el = document.getElementById("saveIndicator");
+  el.textContent = "Сохранение…";
+  el.className = "save-indicator";
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(overrides));
+    el.textContent = "Сохранено";
+    setTimeout(() => { el.textContent = ""; }, 1000);
+  } catch (e) {
+    el.textContent = "Ошибка сохранения";
+    el.className = "save-indicator error";
+  }
+}
+
+function updateItem(id, patch) {
+  const base = INITIAL.find((d) => d.id === id);
+  const prev = overrides[id] || {};
+  const merged = Object.assign({}, base, prev, patch);
+  const next = Object.assign({}, prev, patch);
+  Object.keys(next).forEach((k) => { if (merged[k] === base[k]) delete next[k]; });
+  if (Object.keys(next).length === 0) delete overrides[id];
+  else overrides[id] = next;
+  persist();
+  render();
+}
+
+function escapeHtml(s) {
+  return String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function fmtDate(d) {
+  if (!d) return "";
+  const [y, m, day] = d.split("-");
+  return `${day}.${m}.${y}`;
+}
+
+function render() {
+  const items = getItems();
+  const counts = { all: items.length, waiting: 0, sold: 0, reserved: 0, cancelled: 0 };
+  items.forEach((it) => { counts[it.status] = (counts[it.status] || 0) + 1; });
+
+  const kpiRow = document.getElementById("kpiRow");
+  const sold = counts.sold || 0;
+  const total = counts.all || 0;
+  const share = total ? Math.round((sold / total) * 100) : 0;
+  kpiRow.innerHTML = `
+    <div class="kpi"><div class="kpi-value">${total}</div><div class="kpi-label">Всего</div></div>
+    <div class="kpi"><div class="kpi-value">${sold}</div><div class="kpi-label">Продано</div></div>
+    <div class="kpi"><div class="kpi-value">${share}%</div><div class="kpi-label">Доля продано</div></div>
+  `;
+
+  const filterRow = document.getElementById("filterRow");
+  const chips = [["all", "Все", "#3a3226", "#3a3226"]].concat(
+    Object.entries(STATUS_META).map(([k, m]) => [k, m.label, m.color, m.bg])
+  );
+  filterRow.innerHTML = chips.map(([key, label, color, bg]) => {
+    const active = statusFilter === key;
+    const style = active
+      ? `--c:${color};--bg:${key === "all" ? "#3a3226" : bg};background:${key === "all" ? "#3a3226" : bg};color:${key === "all" ? "#fff" : color};border-color:${color}`
+      : "";
+    return `<button class="chip${active ? " active" : ""}" style="${style}" data-status="${key}">${label} <span class="count">${counts[key] || 0}</span></button>`;
+  }).join("");
+
+  const q = query.trim().toLowerCase();
+  const filtered = items.filter((it) => {
+    if (statusFilter !== "all" && it.status !== statusFilter) return false;
+    if (countryFilter !== "all" && (it.country || "") !== countryFilter) return false;
+    if (!q) return true;
+    return `${it.lot} ${it.vin} ${it.model} ${it.buyer} ${it.auction}`.toLowerCase().includes(q);
+  });
+
+  const list = document.getElementById("list");
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty">Ничего не найдено под текущий фильтр</div>`;
+  } else {
+    list.innerHTML = filtered.map((it) => rowHtml(it)).join("");
+  }
+
+  document.getElementById("footerInfo").textContent =
+    `Показано ${filtered.length} из ${items.length} · отметки сохраняются на устройстве`;
+
+  bindEvents();
+}
+
+function rowHtml(it) {
+  const meta = STATUS_META[it.status] || STATUS_META.waiting;
+  const open = openId === it.id;
+  const statusButtons = Object.entries(STATUS_META).map(([k, m]) => {
+    const active = it.status === k;
+    return `<button class="status-btn${active ? " active" : ""}" style="${active ? `--c:${m.color};--bg:${m.bg};border-color:${m.color};background:${m.bg};color:${m.color}` : ""}" data-action="status" data-id="${it.id}" data-value="${k}">${m.label}</button>`;
+  }).join("");
+
+  const modelLine = [it.model, it.year].filter(Boolean).join(" ");
+  return `
+  <div class="row" data-row="${it.id}">
+    <div class="row-main" data-action="toggle" data-id="${it.id}">
+      <div class="dot" style="background:${meta.color}"></div>
+      <div class="code-block">
+        <span class="code-text">${escapeHtml(it.lot || "—")}</span>
+        <span class="vin-text">${fmtDate(it.date)}</span>
+      </div>
+      <div class="note-text">${escapeHtml(modelLine || "—")} · ${escapeHtml(it.vin || "")}</div>
+      <div class="badge" style="color:${meta.color};background:${meta.bg}">${meta.label}</div>
+      <svg class="chev${open ? " open" : ""}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b5a98a" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    <div class="row-detail${open ? " open" : ""}">
+      <div class="field">
+        <label class="field-label">Статус</label>
+        <div class="status-buttons">${statusButtons}</div>
+      </div>
+      <div class="detail-grid-2">
+        <div class="field">
+          <label class="field-label">Аукцион</label>
+          <input value="${escapeHtml(it.auction)}" disabled />
+        </div>
+        <div class="field">
+          <label class="field-label">Страна</label>
+          <input data-action="country" data-id="${it.id}" value="${escapeHtml(it.country)}" placeholder="Россия / Монголия" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Покупатель / заметка</label>
+        <input data-action="buyer" data-id="${it.id}" value="${escapeHtml(it.buyer)}" placeholder="напр. Алтан-Булаг" />
+      </div>
+      <div class="field">
+        <label class="field-label">VIN</label>
+        <input value="${escapeHtml(it.vin)}" disabled />
+      </div>
+    </div>
+  </div>`;
+}
+
+function bindEvents() {
+  document.querySelectorAll('[data-action="toggle"]').forEach((el) => {
+    el.onclick = () => { openId = openId === el.dataset.id ? null : el.dataset.id; render(); };
+  });
+  document.querySelectorAll('[data-action="status"]').forEach((el) => {
+    el.onclick = (e) => { e.stopPropagation(); updateItem(el.dataset.id, { status: el.dataset.value }); };
+  });
+  document.querySelectorAll('[data-action="buyer"]').forEach((el) => {
+    el.onblur = () => updateItem(el.dataset.id, { buyer: el.value });
+  });
+  document.querySelectorAll('[data-action="country"]').forEach((el) => {
+    el.onblur = () => updateItem(el.dataset.id, { country: el.value });
+  });
+  document.querySelectorAll(".chip").forEach((el) => {
+    el.onclick = () => { statusFilter = el.dataset.status; render(); };
+  });
+}
+
+document.getElementById("searchInput").addEventListener("input", (e) => {
+  query = e.target.value;
+  document.getElementById("clearBtn").style.display = query ? "flex" : "none";
+  render();
+});
+document.getElementById("clearBtn").addEventListener("click", () => {
+  query = "";
+  document.getElementById("searchInput").value = "";
+  document.getElementById("clearBtn").style.display = "none";
+  render();
+});
+document.getElementById("countryFilter").addEventListener("change", (e) => {
+  countryFilter = e.target.value;
+  render();
+});
+
+render();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
