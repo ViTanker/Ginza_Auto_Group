@@ -1,0 +1,2 @@
+# GINZA_AUTO_GROUP
+Auto_Sale
